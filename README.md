@@ -4,8 +4,7 @@ This app provide platform where event hosts can customize details, set available
 Attendees, on the other hand, can booking their preferred slots.
 
 # Try it out
-**Backend is hosted on:** [https://eventchimp.notlocalhost.space/](https://eventchimp.notlocalhost.space/)
-
+**Backend is hosted on:** [https://eventchimp.notlocalhost.space/](https://eventchimp.notlocalhost.space/api-auth/login)
 **API Doc (Auto-generated using OpenAPI schema):** [https://eventchimp.notlocalhost.space/api-doc/](https://eventchimp.notlocalhost.space/api-doc/)
 
 # How to run this locally
