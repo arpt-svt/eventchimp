@@ -24,7 +24,7 @@ from rest_framework.schemas import get_schema_view
 urlpatterns = [
     path(
         "openapi",
-        get_schema_view(title="Your Project", description="API for all things …"),
+        get_schema_view(title="Eventchimp", description="API for Eventchimp backend"),
         name="openapi-schema",
     ),
     path('admin/', admin.site.urls),
