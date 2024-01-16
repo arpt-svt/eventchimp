@@ -18,6 +18,7 @@ from django.contrib import admin
 from django.urls import path, include
 from django.conf import settings
 from django.conf.urls.static import static
+from django.views.generic import TemplateView
 from rest_framework.schemas import get_schema_view
 
 
@@ -26,6 +27,11 @@ urlpatterns = [
         "openapi",
         get_schema_view(title="Eventchimp", description="API for Eventchimp backend"),
         name="openapi-schema",
+    ),
+    path(
+        'api-doc/',
+        TemplateView.as_view(template_name='apidoc.html'),
+        name='documentation'
     ),
     path('admin/', admin.site.urls),
     path('api-auth/', include('rest_framework.urls')),
