@@ -25,7 +25,7 @@ class Schedule(models.Model):
     ):
         if not schedule_instance:
             schedule_instance = Schedule.objects.create(
-                user=user_id,
+                user_id=user_id,
                 name=name
             )
         else:
@@ -41,6 +41,7 @@ class Schedule(models.Model):
             CustomDateSchedule(schedule=schedule_instance, **data)
             for data in custom_schedule_data
         ])
+        return schedule_instance
 
 
 class WeekDaySchedule(models.Model):

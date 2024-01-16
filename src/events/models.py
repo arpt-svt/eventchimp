@@ -3,6 +3,7 @@ from django.utils.text import slugify
 from django.conf import settings
 
 from commons.utils import generate_random_string
+from schedules.models import Schedule
 
 
 class Event(models.Model):
@@ -18,6 +19,7 @@ class Event(models.Model):
     before_buffer_time_in_minutes = models.PositiveIntegerField(default=0)
     after_buffer_time_in_minutes = models.PositiveIntegerField(default=0)
     notice_in_minutes = models.PositiveIntegerField(default=0)
+    schedule = models.ForeignKey(Schedule, on_delete=models.SET_NULL, null=True, default=None)
     is_active = models.BooleanField(default=True)
     updated_at = models.DateTimeField(auto_now=True)
     created_at = models.DateTimeField(auto_now_add=True)

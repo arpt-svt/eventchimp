@@ -35,6 +35,7 @@ class EventSerializer(serializers.ModelSerializer):
             'before_buffer_time_in_minutes',
             'after_buffer_time_in_minutes',
             'notice_in_minutes',
+            'schedule',
             'created_at',
             'updated_at',
         )
@@ -61,5 +62,4 @@ class EventSerializer(serializers.ModelSerializer):
 
     def save(self, *args, **kwargs):
         self.validated_data['organiser'] = self.context['request'].user
-        print(self.validated_data)
         return super().save(*args, **kwargs)

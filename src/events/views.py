@@ -17,8 +17,8 @@ class EventViewset(viewsets.ModelViewSet):
     def destroy(self, request, *args, **kwargs):
         event = self.get_object()
         event.soft_delete()
-        return response.Response(status=status.HTTP_204_NO_CONTENT)
+        return response.Response({}, status=status.HTTP_204_NO_CONTENT)
 
 
 event_router = DefaultRouter(trailing_slash=False)
-event_router.register(r'events', EventViewset, basename='event')
+event_router.register(r'events', EventViewset, basename='events')

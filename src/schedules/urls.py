@@ -1,13 +1,9 @@
-from django.urls import path
+from django.urls import path, include
 
-from schedules.views import schedulecreateapiview
+from schedules.views import schedule_router
 
 
 app_name = "schedules"
 urlpatterns = [
-    path(
-        route='schedules',
-        view=schedulecreateapiview.ScheduleCreateApiView.as_view(),
-        name='create-schedule'
-    ),
+    path('api/', include((schedule_router.urls, 'scheduls'))),
 ]
