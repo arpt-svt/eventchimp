@@ -5,5 +5,5 @@ from schedules.views import schedule_router
 
 app_name = "schedules"
 urlpatterns = [
-    path('api/', include((schedule_router.urls, 'scheduls'))),
+    path('api/', include((schedule_router.urls, 'schedules'))),
 ]

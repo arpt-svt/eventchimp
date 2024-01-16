@@ -29,6 +29,11 @@ class CustomDateScheduleHelperSerializer(serializers.Serializer):
     start_time = serializers.TimeField()
     end_time = serializers.TimeField()
 
+    def validate_date(self, date):
+        if timezone.now().date > date:
+            raise serializers.ValidationError("Start date should be in future")
+        return date
+
     def validate(self, data):
         if data["end_time"] != time(0, 0):
             if data["start_time"] >= data["end_time"]:

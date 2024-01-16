@@ -8,7 +8,7 @@ from .models import Schedule
 
 
 class ScheduleCreateApiView(viewsets.ModelViewSet):
-    http_method_names = ('get', 'post')
+    http_method_names = ('get', 'post', 'options')
     serializer_class = ScheduleCreationSerializer
     permission_classes = [IsOwner]
 

@@ -9,3 +9,9 @@ class Weekday(models.IntegerChoices):
     FRIDAY = 4
     SATURDAY = 5
     SUNDAY = 6
+
+
+class ReservationStatus(models.TextChoices):
+    SOFT_RESERVED = "SOFT_RESERVED"
+    RESERVED = "RESERVED"
+    CANCELLED = "CANCELLED"
