@@ -5,7 +5,7 @@ from commons.enums import ReservationStatus
 
 
 class Reservation(models.Model):
-    event = models.ForeignKey(Event, on_delete=models.CASCADE)
+    event = models.ForeignKey(Event, on_delete=models.CASCADE, related_name="reservations")
     status = models.CharField(choices=ReservationStatus.choices, default=ReservationStatus.SOFT_RESERVED)
     start_datetime = models.DateTimeField()
     end_datetime = models.DateTimeField()
@@ -23,4 +23,15 @@ class Reservation(models.Model):
         self.save(
             force_update=True,
             update_fields=["is_active", "updated_at"]
+        )
+
+    @classmethod
+    def get_active_reservations(cls, event_id, start_datetime, end_datetime):
+        return cls.objects.exclude(
+            status=ReservationStatus.CANCELLED
+        ).filter(
+            event_id=event_id,
+            start_datetime__lte=end_datetime,
+            end_datetime__gte=start_datetime,
+            is_active=True,
         )

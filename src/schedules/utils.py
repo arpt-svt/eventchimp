@@ -124,3 +124,26 @@ def convert_custom_date_schedule_to_tz(custom_schedules, src_timezone, target_ti
             "end_time": end_time,
         })
     return updated_schedule
+
+
+def get_datetime_intervals(start_datetime, end_datetime):
+    curr_datetime = start_datetime.replace(microsecond=0, second=0, minute=0, hour=0) + timezone.timedelta(days=1)
+    intervals = []
+    while curr_datetime < end_datetime:
+        intervals.append(
+            {
+                "day_of_week": start_datetime.weekday(),
+                "start_datetime": start_datetime,
+                "end_datetime": curr_datetime
+            }
+        )
+        start_datetime = curr_datetime
+        curr_datetime += timezone.timedelta(days=1)
+    intervals.append(
+        {
+            "day_of_week": start_datetime.weekday(),
+            "start_datetime": start_datetime,
+            "end_datetime": end_datetime
+        }
+    )
+    return intervals

@@ -5,14 +5,15 @@ from rest_framework import serializers
 from django.utils import timezone
 
 from commons.enums import Weekday
+from commons.validators import MinutesMultipleOfValidator
 from .models import Schedule
 from .utils import convert_custom_date_schedule_to_tz, convert_weekday_schedules_to_tz
 
 
 class WeekDayScheduleHelperSerializer(serializers.Serializer):
     day_of_week = serializers.ChoiceField(choices=Weekday.choices)
-    start_time = serializers.TimeField()
-    end_time = serializers.TimeField()
+    start_time = serializers.TimeField(validators=[MinutesMultipleOfValidator()])
+    end_time = serializers.TimeField(validators=[MinutesMultipleOfValidator()])
 
     def validate(self, data):
         if data["end_time"] != time(0, 0):
@@ -24,10 +25,10 @@ class WeekDayScheduleHelperSerializer(serializers.Serializer):
 
 class CustomDateScheduleHelperSerializer(serializers.Serializer):
     date = serializers.DateField(write_only=True)
-    start_datetime = serializers.DateTimeField(read_only=True)
-    end_datetime = serializers.DateTimeField(read_only=True)
-    start_time = serializers.TimeField()
-    end_time = serializers.TimeField()
+    start_datetime = serializers.DateTimeField(read_only=True, validators=[MinutesMultipleOfValidator()])
+    end_datetime = serializers.DateTimeField(read_only=True, validators=[MinutesMultipleOfValidator()])
+    start_time = serializers.TimeField(validators=[MinutesMultipleOfValidator()])
+    end_time = serializers.TimeField(validators=[MinutesMultipleOfValidator()])
 
     def validate_date(self, date):
         if timezone.now().date > date:

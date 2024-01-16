@@ -17,3 +17,11 @@ class AutoTzDateTimeField(serializers.DateTimeField):
             except zoneinfo.ZoneInfoNotFoundError:
                 pass
         return super().to_representation(value)
+
+
+class TimeZoneField(serializers.CharField):
+    def to_internal_value(self, data):
+        try:
+            return zoneinfo.ZoneInfo(data)
+        except zoneinfo.ZoneInfoNotFoundError as ex:
+            raise serializers.ValidationError(ex)

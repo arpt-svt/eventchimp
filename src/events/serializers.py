@@ -1,6 +1,8 @@
 from rest_framework import serializers
 
 from commons.serializerfields import AutoTzDateTimeField
+from commons.validators import MinutesMultipleOfValidator
+from commons.constants import MINUTES_MULTIPLE_OF
 from django.utils import timezone
 from .models import Event
 
@@ -10,14 +12,39 @@ def get_default_end_datetime():
 
 
 class EventSerializer(serializers.ModelSerializer):
-    duration_in_minutes = serializers.IntegerField(min_value=15, max_value=720)
-    step_in_minutes = serializers.IntegerField(min_value=15, max_value=720)
-    start_datetime = AutoTzDateTimeField()
+    duration_in_minutes = serializers.IntegerField(
+        min_value=MINUTES_MULTIPLE_OF,
+        max_value=720,
+        validators=[MinutesMultipleOfValidator()]
+    )
+    step_in_minutes = serializers.IntegerField(
+        min_value=MINUTES_MULTIPLE_OF,
+        max_value=720,
+        validators=[MinutesMultipleOfValidator()]
+    )
+    before_buffer_time_in_minutes = serializers.IntegerField(
+        min_value=0,
+        max_value=180,
+        default=0,
+        validators=[MinutesMultipleOfValidator()]
+    )
+    after_buffer_time_in_minutes = serializers.IntegerField(
+        min_value=0,
+        max_value=180,
+        default=0,
+        validators=[MinutesMultipleOfValidator()]
+    )
+    notice_in_minutes = serializers.IntegerField(
+        min_value=0,
+        max_value=180,
+        default=0,
+        validators=[MinutesMultipleOfValidator()]
+    )
+    start_datetime = AutoTzDateTimeField(validators=[MinutesMultipleOfValidator()])
     end_datetime = AutoTzDateTimeField(default=get_default_end_datetime)
     rolling_days = serializers.IntegerField(allow_null=True, min_value=1, max_value=366)
-    before_buffer_time_in_minutes = serializers.IntegerField(min_value=0, max_value=180, default=0)
-    after_buffer_time_in_minutes = serializers.IntegerField(min_value=0, max_value=180, default=0)
-    notice_in_minutes = serializers.IntegerField(min_value=0, max_value=180, default=0)
+    created_at = AutoTzDateTimeField()
+    updated_at = AutoTzDateTimeField()
 
     class Meta:
         model = Event
