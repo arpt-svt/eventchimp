@@ -4,5 +4,9 @@
 			"path": "."
 		}
 	],
-	"settings": {}
+	"settings": {
+		"flake8.args": [
+			"--max-line-length=120"
+		]	
+	},
 }
