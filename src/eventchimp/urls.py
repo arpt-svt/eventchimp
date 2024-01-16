@@ -23,5 +23,6 @@ from django.conf.urls.static import static
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('api-auth/', include('rest_framework.urls')),
-    path('event-service/', include('events.urls'))
+    path('event-service/', include('events.urls')),
+    path('schedule-service/api/', include('schedules.urls')),
 ] + static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
