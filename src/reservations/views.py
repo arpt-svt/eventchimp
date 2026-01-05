@@ -30,7 +30,9 @@ class ReservationViewSet(viewsets.ModelViewSet):
         return [IsOwner()]
 
     def get_queryset(self):
+        print("Getting queryset for reservations")
         event_id = self.request.query_params.get('event_id', None)
+        print(f"Event ID: {event_id}")
 
         if event_id is not None:
             return Reservation.objects.filter(
@@ -41,7 +43,9 @@ class ReservationViewSet(viewsets.ModelViewSet):
         return Reservation.objects.none()
 
     def destroy(self, request, *args, **kwargs):
+        print("Destroying reservation")
         reservation = self.get_object()
+        print(f"Reservation ID: {reservation.id}")
         reservation.soft_delete()
         return response.Response({}, status=status.HTTP_204_NO_CONTENT)
 
@@ -50,7 +54,9 @@ class GetAvailabiltiyApiView(views.APIView):
     permission_classes = [permissions.AllowAny]
 
     def get(self, request):
+        print("Fetching availability slots")
         serializer = AvailabilityRequestSerializer(data=request.query_params)
+        print("Serializer created")
         if not serializer.is_valid():
             return response.Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
@@ -94,10 +100,13 @@ class ReservationICSView(views.APIView):
     permission_classes = [permissions.AllowAny]
 
     def get(self, request, pk, format=None):
+        print(f"Generating ICS file for reservation {pk}")
         reservation = get_object_or_404(Reservation, pk=pk, is_active=True)
+        print(f"Found reservation: {reservation.id}")
         
         # Simple VCALENDAR generation
         dt_format = "%Y%m%dT%H%M%SZ"
+        print("Starting ICS generation")
         start_str = reservation.start_datetime.strftime(dt_format)
         end_str = reservation.end_datetime.strftime(dt_format)
         now_str = timezone.now().strftime(dt_format)
