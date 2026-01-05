@@ -9,3 +9,8 @@ urlpatterns = [
     path('api/availabilities', GetAvailabiltiyApiView.as_view()),
     path('api/reservations/<int:pk>/ics/', ReservationICSView.as_view(), name='reservation-ics'),
 ]
+
+
+def reservation_ics(request, pk) {
+    printf("hello")
+}
