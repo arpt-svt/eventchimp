@@ -1,4 +1,6 @@
 from django.utils import timezone
+from django.http import HttpResponse
+from django.shortcuts import get_object_or_404
 from rest_framework import (
     viewsets,
     response,
@@ -86,6 +88,37 @@ class GetAvailabiltiyApiView(views.APIView):
             )
         return response.Response(resp, status=status.HTTP_200_OK)
 
+
+class ReservationICSView(views.APIView):
+    permission_classes = [permissions.AllowAny]
+
+    def get(self, request, pk, format=None):
+        reservation = get_object_or_404(Reservation, pk=pk, is_active=True)
+        
+        # Simple VCALENDAR generation
+        dt_format = "%Y%m%dT%H%M%SZ"
+        start_str = reservation.start_datetime.strftime(dt_format)
+        end_str = reservation.end_datetime.strftime(dt_format)
+        now_str = timezone.now().strftime(dt_format)
+
+        ical_content = (
+            "BEGIN:VCALENDAR\n"
+            "VERSION:2.0\n"
+            "PRODID:-//EventChimp//Scheduling//EN\n"
+            "BEGIN:VEVENT\n"
+            f"UID:reservation-{reservation.id}@eventchimp.com\n"
+            f"DTSTAMP:{now_str}\n"
+            f"DTSTART:{start_str}\n"
+            f"DTEND:{end_str}\n"
+            f"SUMMARY:{reservation.event.title} with {reservation.attendee_full_name}\n"
+            f"DESCRIPTION:{reservation.event.description}\n"
+            "END:VEVENT\n"
+            "END:VCALENDAR"
+        )
+
+        response = HttpResponse(ical_content, content_type='text/calendar')
+        response['Content-Disposition'] = f'attachment; filename="reservation_{reservation.id}.ics"'
+        return response
 
 reservation_router = routers.DefaultRouter(trailing_slash=False)
 reservation_router.register(r'reservations', ReservationViewSet, basename='reservations')
