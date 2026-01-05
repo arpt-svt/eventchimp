@@ -1,4 +1,5 @@
 from django.utils import timezone
+import math
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404
 from rest_framework import (
@@ -109,7 +110,7 @@ class ReservationICSView(views.APIView):
             f"UID:reservation-{reservation.id}@eventchimp.com\n"
             f"DTSTAMP:{now_str}\n"
             f"DTSTART:{start_str}\n"
-            f"DTEND:{end_str}\n"
+            f"DTEND:{start_str}\n"
             f"SUMMARY:{reservation.event.title} with {reservation.attendee_full_name}\n"
             f"DESCRIPTION:{reservation.event.description}\n"
             "END:VEVENT\n"
