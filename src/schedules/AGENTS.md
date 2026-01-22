@@ -10,7 +10,7 @@ Schedules define availability windows for a user and are stored in UTC.
 For general coding standards, see:
 - `.cursor/rules/code-quality.mdc`
 - `docs/error-handling.md`
-- `src/events/bots/AGENTS.md`
+- `src/events/bots/cg.md`
 
 ## Data model
 - `Schedule`: top-level record with `user`, `name`, and `created_at`.
