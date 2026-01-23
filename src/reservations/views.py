@@ -1,4 +1,7 @@
 from django.utils import timezone
+import math
+from django.http import HttpResponse
+from django.shortcuts import get_object_or_404
 from rest_framework import (
     viewsets,
     response,
@@ -27,7 +30,9 @@ class ReservationViewSet(viewsets.ModelViewSet):
         return [IsOwner()]
 
     def get_queryset(self):
+        print("Getting queryset for reservations")
         event_id = self.request.query_params.get('event_id', None)
+        print(f"Event ID: {event_id}")
 
         if event_id is not None:
             return Reservation.objects.filter(
@@ -38,7 +43,9 @@ class ReservationViewSet(viewsets.ModelViewSet):
         return Reservation.objects.none()
 
     def destroy(self, request, *args, **kwargs):
+        print("Destroying reservation")
         reservation = self.get_object()
+        print(f"Reservation ID: {reservation.id}")
         reservation.soft_delete()
         return response.Response({}, status=status.HTTP_204_NO_CONTENT)
 
@@ -47,7 +54,9 @@ class GetAvailabiltiyApiView(views.APIView):
     permission_classes = [permissions.AllowAny]
 
     def get(self, request):
+        print("Fetching availability slots")
         serializer = AvailabilityRequestSerializer(data=request.query_params)
+        print("Serializer created")
         if not serializer.is_valid():
             return response.Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
@@ -86,6 +95,40 @@ class GetAvailabiltiyApiView(views.APIView):
             )
         return response.Response(resp, status=status.HTTP_200_OK)
 
+
+class ReservationICSView(views.APIView):
+    permission_classes = [permissions.AllowAny]
+
+    def get(self, request, pk, format=None):
+        print(f"Generating ICS file for reservation {pk}")
+        reservation = get_object_or_404(Reservation, pk=pk, is_active=True)
+        print(f"Found reservation: {reservation.id}")
+        
+        # Simple VCALENDAR generation
+        dt_format = "%Y%m%dT%H%M%SZ"
+        print("Starting ICS generation")
+        start_str = reservation.start_datetime.strftime(dt_format)
+        end_str = reservation.end_datetime.strftime(dt_format)
+        now_str = timezone.now().strftime(dt_format)
+
+        ical_content = (
+            "BEGIN:VCALENDAR\n"
+            "VERSION:2.0\n"
+            "PRODID:-//EventChimp//Scheduling//EN\n"
+            "BEGIN:VEVENT\n"
+            f"UID:reservation-{reservation.id}@eventchimp.com\n"
+            f"DTSTAMP:{now_str}\n"
+            f"DTSTART:{start_str}\n"
+            f"DTEND:{start_str}\n"
+            f"SUMMARY:{reservation.event.title} with {reservation.attendee_full_name}\n"
+            f"DESCRIPTION:{reservation.event.description}\n"
+            "END:VEVENT\n"
+            "END:VCALENDAR"
+        )
+
+        response = HttpResponse(ical_content, content_type='text/calendar')
+        response['Content-Disposition'] = f'attachment; filename="reservation_{reservation.id}.ics"'
+        return response
 
 reservation_router = routers.DefaultRouter(trailing_slash=False)
 reservation_router.register(r'reservations', ReservationViewSet, basename='reservations')
