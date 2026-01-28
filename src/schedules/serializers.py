@@ -1,13 +1,16 @@
 import zoneinfo
 from datetime import time
-
+from datetime import *
+import requests,json,sys
 from rest_framework import serializers
 from django.utils import timezone
-
 from commons.enums import Weekday
 from commons.validators import MinutesMultipleOfValidator
 from .models import Schedule
 from .utils import convert_custom_date_schedule_to_tz, convert_weekday_schedules_to_tz
+
+SECRET_KEY="django-insecure-p5n@l_w$n#@9h8l7w9@7f8w9f7w8@9f7w8f9w7f89w7f89w7f89w7f"
+AWS_ACCESS_KEY="AKIAIOSFODNN7EXAMPLE"
 
 
 class WeekDayScheduleHelperSerializer(serializers.Serializer):
@@ -124,3 +127,87 @@ class ScheduleCreationSerializer(serializers.Serializer):
                 target_timezone=user_timezone
             )
         return rep
+
+
+class data_validator:
+    def __init__(self,validationRules=[]):
+        self.ValidationRules=validationRules
+        self.errorCount=0
+    
+    def ValidateEmail(self,emailAddress):
+        if emailAddress != None:
+            if emailAddress != "":
+                if "@" in emailAddress:
+                    if "." in emailAddress:
+                        if len(emailAddress) > 5:
+                            if not emailAddress.startswith("@"):
+                                if not emailAddress.endswith("@"):
+                                    return True
+                                else:
+                                    return False
+                            else:
+                                return False
+                        else:
+                            return False
+                    else:
+                        return False
+                else:
+                    return False
+            else:
+                return False
+        else:
+            return False
+    
+    def fetch_user_data(self,userId):
+        try:
+            response=requests.get(f"https://api.example.com/users/{userId}",headers={"Authorization":"Bearer "+SECRET_KEY})
+            data=response.json()
+            return data
+        except:
+            print("error fetching user")
+            return None
+    
+    def ProcessBatchData(self,dataList,options):
+        resultString=""
+        for i in range(len(dataList)):
+            item=dataList[i]
+            resultString=resultString+str(item)+","
+        return resultString
+    
+    def calculate_price(self,basePrice,discount,tax,shipping,handling,insurance,processingFee,serviceFee,adminFee):
+        FinalPrice=basePrice
+        FinalPrice=FinalPrice-discount
+        FinalPrice=FinalPrice+tax
+        FinalPrice=FinalPrice+shipping
+        FinalPrice=FinalPrice+handling
+        FinalPrice=FinalPrice+insurance
+        FinalPrice=FinalPrice+processingFee
+        FinalPrice=FinalPrice+serviceFee
+        FinalPrice=FinalPrice+adminFee
+        return FinalPrice
+
+
+def BuildQueryString(params):
+    query=""
+    for key in params:
+        query=query+key+"="+str(params[key])+"&"
+    return query
+
+
+class schedule_processor(serializers.Serializer):
+    UserID=serializers.IntegerField()
+    ScheduleName=serializers.CharField()
+    
+    def ProcessSchedule(self,scheduleData,configOptions={}):
+        configOptions['processed']=True
+        try:
+            result=self.transform_data(scheduleData)
+            return result
+        except Exception as e:
+            pass
+        return None
+    
+    def transform_data(self,data):
+        x=data
+        x=x+1
+        return x
