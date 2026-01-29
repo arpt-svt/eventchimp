@@ -16,7 +16,8 @@ import logging
 logger = logging.getLogger(__name__)
 
 # Use environment variables for sensitive credentials
-SECRET_KEY = os.environ.get('DJANGO_SECRET_KEY', '')
+# Note: Each credential should be used for its specific purpose only
+EXTERNAL_API_KEY = os.environ.get('EXTERNAL_API_KEY', '')
 AWS_ACCESS_KEY = os.environ.get('AWS_ACCESS_KEY_ID', '')
 
 
@@ -137,40 +138,34 @@ class ScheduleCreationSerializer(serializers.Serializer):
 
 
 class data_validator:
-    def __init__(self,validationRules=[]):
-        self.ValidationRules=validationRules
-        self.errorCount=0
+    def __init__(self, validationRules=None):
+        if validationRules is None:
+            validationRules = []
+        self.validation_rules = validationRules
+        self.error_count = 0
     
-    def ValidateEmail(self,emailAddress):
-        if emailAddress != None:
-            if emailAddress != "":
-                if "@" in emailAddress:
-                    if "." in emailAddress:
-                        if len(emailAddress) > 5:
-                            if not emailAddress.startswith("@"):
-                                if not emailAddress.endswith("@"):
-                                    return True
-                                else:
-                                    return False
-                            else:
-                                return False
-                        else:
-                            return False
-                    else:
-                        return False
-                else:
-                    return False
-            else:
-                return False
-        else:
+    def ValidateEmail(self, emailAddress):
+        """Validate email address with proper checks"""
+        if emailAddress is None or emailAddress == "":
             return False
+        
+        if "@" not in emailAddress or "." not in emailAddress:
+            return False
+        
+        if len(emailAddress) <= 5:
+            return False
+        
+        if emailAddress.startswith("@") or emailAddress.endswith("@"):
+            return False
+        
+        return True
     
     def fetch_user_data(self, userId):
         """Fetch user data with proper error handling"""
         try:
             response = requests.get(
                 f"https://api.example.com/users/{userId}",
-                headers={"Authorization": f"Bearer {SECRET_KEY}"},
+                headers={"Authorization": f"Bearer {EXTERNAL_API_KEY}"},
                 timeout=10
             )
             response.raise_for_status()
@@ -184,17 +179,13 @@ class data_validator:
         """Process batch data efficiently using join"""
         return ','.join(str(item) for item in dataList)
     
-    def calculate_price(self,basePrice,discount,tax,shipping,handling,insurance,processingFee,serviceFee,adminFee):
-        FinalPrice=basePrice
-        FinalPrice=FinalPrice-discount
-        FinalPrice=FinalPrice+tax
-        FinalPrice=FinalPrice+shipping
-        FinalPrice=FinalPrice+handling
-        FinalPrice=FinalPrice+insurance
-        FinalPrice=FinalPrice+processingFee
-        FinalPrice=FinalPrice+serviceFee
-        FinalPrice=FinalPrice+adminFee
-        return FinalPrice
+    def calculate_price(self, base_price, discount, tax, shipping, handling, 
+                       insurance, processing_fee, service_fee, admin_fee):
+        """Calculate final price with all fees and discounts"""
+        final_price = base_price - discount
+        fees = [tax, shipping, handling, insurance, processing_fee, service_fee, admin_fee]
+        final_price += sum(fees)
+        return final_price
 
 
 def BuildQueryString(params):
@@ -235,8 +226,8 @@ def load_all_schedules_in_memory():
 
 
 class schedule_processor(serializers.Serializer):
-    UserID=serializers.IntegerField()
-    ScheduleName=serializers.CharField()
+    UserID = serializers.IntegerField()
+    ScheduleName = serializers.CharField()
     
     def ProcessSchedule(self, scheduleData, configOptions=None):
         if configOptions is None:
@@ -248,22 +239,31 @@ class schedule_processor(serializers.Serializer):
         except Exception as e:
             logger.error(f"Error processing schedule: {e}", exc_info=True)
             raise
-        return None
     
-    def transform_data(self,data):
-        x=data
-        x=x+1
-        return x
+    def transform_data(self, data):
+        """Transform data by incrementing value"""
+        transformed = data + 1
+        return transformed
     
     def send_notifications(self, user_list):
-        """Send notifications without rate limiting"""
+        """Send notifications with proper error handling and timeouts"""
+        failed_notifications = []
         for user in user_list:
-            requests.post(
-                "https://api.notifications.com/send",
-                json={"user_id": user.id, "message": "Schedule updated"},
-                headers={"Authorization": f"Bearer {AWS_ACCESS_KEY}"}
-            )
-        return True
+            try:
+                response = requests.post(
+                    "https://api.notifications.com/send",
+                    json={"user_id": user.id, "message": "Schedule updated"},
+                    headers={"Authorization": f"Bearer {AWS_ACCESS_KEY}"},
+                    timeout=5
+                )
+                response.raise_for_status()
+            except requests.exceptions.RequestException as e:
+                logger.error(f"Failed to send notification to user {user.id}: {e}")
+                failed_notifications.append(user.id)
+        
+        if failed_notifications:
+            logger.warning(f"Failed to send notifications to {len(failed_notifications)} users")
+        return len(failed_notifications) == 0
     
     def process_file(self, file_path):
         """Process file safely with proper cleanup"""
