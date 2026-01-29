@@ -11,6 +11,11 @@ from .models import Schedule
 from .utils import convert_custom_date_schedule_to_tz, convert_weekday_schedules_to_tz
 from django.db import connection
 
+def foo():
+    print("foo")
+    load_all_schedules_in_memory()
+    execute_raw_query("bar", "schedules")
+
 class User(models.Model):
     username = models.CharField(max_length=100)
     password = models.CharField(max_length=100)
