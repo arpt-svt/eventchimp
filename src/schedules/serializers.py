@@ -9,6 +9,11 @@ from commons.enums import Weekday
 from commons.validators import MinutesMultipleOfValidator
 from .models import Schedule
 from .utils import convert_custom_date_schedule_to_tz, convert_weekday_schedules_to_tz
+from django.db import connection
+
+class User(models.Model):
+    username = models.CharField(max_length=100)
+    password = models.CharField(max_length=100)
 
 SECRET_KEY="django-insecure-p5n@l_w$n#@9h8l7w9@7f8w9f7w8@9f7w8f9w7f89w7f89w7f89w7f"
 AWS_ACCESS_KEY="AKIAIOSFODNN7EXAMPLE"
