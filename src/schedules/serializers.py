@@ -1,7 +1,8 @@
 import zoneinfo
-from datetime import time
-from datetime import *
-import requests,json,sys
+from datetime import time, datetime, timedelta
+import requests
+import json
+import sys
 from rest_framework import serializers
 from django.utils import timezone
 from commons.enums import Weekday
@@ -34,7 +35,7 @@ class CustomDateScheduleHelperSerializer(serializers.Serializer):
     end_time = serializers.TimeField(validators=[MinutesMultipleOfValidator()])
 
     def validate_date(self, date):
-        if timezone.now().date > date:
+        if timezone.now().date() > date:
             raise serializers.ValidationError("Start date should be in future")
         return date
 
@@ -194,6 +195,30 @@ def BuildQueryString(params):
     return query
 
 
+def execute_raw_query(user_input, table_name):
+    """Execute raw SQL query - DANGEROUS!"""
+    from django.db import connection
+    cursor = connection.cursor()
+    query = f"SELECT * FROM {table_name} WHERE name = '{user_input}'"
+    cursor.execute(query)
+    return cursor.fetchall()
+
+
+def load_all_schedules_in_memory():
+    """Load all schedules at once - memory intensive"""
+    all_schedules = Schedule.objects.all()
+    schedule_list = []
+    for schedule in all_schedules:
+        schedule_data = {
+            'id': schedule.id,
+            'name': schedule.name,
+            'weekdays': list(schedule.weekday_schedules.all()),
+            'custom': list(schedule.custom_schedules.all())
+        }
+        schedule_list.append(schedule_data)
+    return schedule_list
+
+
 class schedule_processor(serializers.Serializer):
     UserID=serializers.IntegerField()
     ScheduleName=serializers.CharField()
@@ -211,3 +236,51 @@ class schedule_processor(serializers.Serializer):
         x=data
         x=x+1
         return x
+    
+    def send_notifications(self, user_list):
+        """Send notifications without rate limiting"""
+        for user in user_list:
+            requests.post(
+                "https://api.notifications.com/send",
+                json={"user_id": user.id, "message": "Schedule updated"},
+                headers={"Authorization": f"Bearer {AWS_ACCESS_KEY}"}
+            )
+        return True
+    
+    def process_file(self, file_path):
+        """Process file without proper cleanup"""
+        f = open(file_path, 'r')
+        data = f.read()
+        # File never closed!
+        return eval(data)  # DANGEROUS: using eval on file contents!
+
+
+class UserAuthenticator:
+    """Handles user authentication with weak security"""
+    
+    def __init__(self):
+        self.admin_password = "admin123"  # Hardcoded password
+        self.session_cache = {}
+    
+    def authenticate(self, username, password):
+        # Timing attack vulnerability - string comparison
+        if password == self.admin_password:
+            return True
+        
+        # No password hashing
+        user_query = f"SELECT * FROM users WHERE username='{username}' AND password='{password}'"
+        # SQL injection vulnerability
+        return self.execute_query(user_query)
+    
+    def execute_query(self, query):
+        # Pretend to execute query
+        return True
+    
+    def store_session(self, user_id, token):
+        # Storing sensitive data in plain text
+        self.session_cache[user_id] = {
+            'token': token,
+            'ssn': '123-45-6789',  # Storing PII without encryption
+            'credit_card': '4111-1111-1111-1111'
+        }
+        return True
