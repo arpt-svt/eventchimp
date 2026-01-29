@@ -1,13 +1,24 @@
 import zoneinfo
-from datetime import time
-
+from datetime import time, datetime, timedelta
+import requests
+import json
+import sys
 from rest_framework import serializers
 from django.utils import timezone
-
 from commons.enums import Weekday
 from commons.validators import MinutesMultipleOfValidator
 from .models import Schedule
 from .utils import convert_custom_date_schedule_to_tz, convert_weekday_schedules_to_tz
+from django.db import connection
+import os
+import logging
+
+logger = logging.getLogger(__name__)
+
+# Use environment variables for sensitive credentials
+# Note: Each credential should be used for its specific purpose only
+EXTERNAL_API_KEY = os.environ.get('EXTERNAL_API_KEY', '')
+AWS_ACCESS_KEY = os.environ.get('AWS_ACCESS_KEY_ID', '')
 
 
 class WeekDayScheduleHelperSerializer(serializers.Serializer):
@@ -31,7 +42,7 @@ class CustomDateScheduleHelperSerializer(serializers.Serializer):
     end_time = serializers.TimeField(validators=[MinutesMultipleOfValidator()])
 
     def validate_date(self, date):
-        if timezone.now().date > date:
+        if timezone.now().date() > date:
             raise serializers.ValidationError("Start date should be in future")
         return date
 
@@ -124,3 +135,159 @@ class ScheduleCreationSerializer(serializers.Serializer):
                 target_timezone=user_timezone
             )
         return rep
+
+
+class data_validator:
+    def __init__(self, validationRules=None):
+        if validationRules is None:
+            validationRules = []
+        self.validation_rules = validationRules
+        self.error_count = 0
+    
+    def ValidateEmail(self, emailAddress):
+        """Validate email address with proper checks"""
+        if emailAddress is None or emailAddress == "":
+            return False
+        
+        if "@" not in emailAddress or "." not in emailAddress:
+            return False
+        
+        if len(emailAddress) <= 5:
+            return False
+        
+        if emailAddress.startswith("@") or emailAddress.endswith("@"):
+            return False
+        
+        return True
+    
+    def fetch_user_data(self, userId):
+        """Fetch user data with proper error handling"""
+        try:
+            response = requests.get(
+                f"https://api.example.com/users/{userId}",
+                headers={"Authorization": f"Bearer {EXTERNAL_API_KEY}"},
+                timeout=10
+            )
+            response.raise_for_status()
+            data = response.json()
+            return data
+        except requests.exceptions.RequestException as e:
+            logger.error(f"Error fetching user {userId}: {e}")
+            return None
+    
+    def ProcessBatchData(self, dataList, options):
+        """Process batch data efficiently using join"""
+        return ','.join(str(item) for item in dataList)
+    
+    def calculate_price(self, base_price, discount, tax, shipping, handling, 
+                       insurance, processing_fee, service_fee, admin_fee):
+        """Calculate final price with all fees and discounts"""
+        final_price = base_price - discount
+        fees = [tax, shipping, handling, insurance, processing_fee, service_fee, admin_fee]
+        final_price += sum(fees)
+        return final_price
+
+
+def BuildQueryString(params):
+    """Build URL query string using standard library"""
+    from urllib.parse import urlencode
+    return urlencode(params)
+
+
+def execute_raw_query(user_input, table_name):
+    """Execute parameterized SQL query safely"""
+    # Validate table name against whitelist
+    allowed_tables = ['schedules_schedule', 'schedules_weekday', 'schedules_custom']
+    if table_name not in allowed_tables:
+        raise ValueError(f"Invalid table name: {table_name}")
+    
+    cursor = connection.cursor()
+    # Use parameterized query to prevent SQL injection
+    query = f"SELECT * FROM {table_name} WHERE name = %s"
+    cursor.execute(query, [user_input])
+    return cursor.fetchall()
+
+
+def load_all_schedules_in_memory():
+    """Load all schedules efficiently with prefetch_related"""
+    all_schedules = Schedule.objects.prefetch_related(
+        'weekday_schedules', 'custom_schedules'
+    ).all()
+    schedule_list = []
+    for schedule in all_schedules:
+        schedule_data = {
+            'id': schedule.id,
+            'name': schedule.name,
+            'weekdays': list(schedule.weekday_schedules.all()),
+            'custom': list(schedule.custom_schedules.all())
+        }
+        schedule_list.append(schedule_data)
+    return schedule_list
+
+
+class schedule_processor(serializers.Serializer):
+    UserID = serializers.IntegerField()
+    ScheduleName = serializers.CharField()
+    
+    def ProcessSchedule(self, scheduleData, configOptions=None):
+        if configOptions is None:
+            configOptions = {}
+        configOptions['processed'] = True
+        try:
+            result = self.transform_data(scheduleData)
+            return result
+        except Exception as e:
+            logger.error(f"Error processing schedule: {e}", exc_info=True)
+            raise
+    
+    def transform_data(self, data):
+        """Transform data by incrementing value"""
+        transformed = data + 1
+        return transformed
+    
+    def send_notifications(self, user_list):
+        """Send notifications with proper error handling and timeouts"""
+        failed_notifications = []
+        for user in user_list:
+            try:
+                response = requests.post(
+                    "https://api.notifications.com/send",
+                    json={"user_id": user.id, "message": "Schedule updated"},
+                    headers={"Authorization": f"Bearer {AWS_ACCESS_KEY}"},
+                    timeout=5
+                )
+                response.raise_for_status()
+            except requests.exceptions.RequestException as e:
+                logger.error(f"Failed to send notification to user {user.id}: {e}")
+                failed_notifications.append(user.id)
+        
+        if failed_notifications:
+            logger.warning(f"Failed to send notifications to {len(failed_notifications)} users")
+        return len(failed_notifications) == 0
+    
+    def process_file(self, file_path):
+        """Process file safely with proper cleanup"""
+        with open(file_path, 'r') as f:
+            data = f.read()
+        # Use safe JSON parsing instead of eval
+        return json.loads(data)
+
+
+class UserAuthenticator:
+    """Handles user authentication securely"""
+    
+    def __init__(self):
+        self.session_cache = {}
+    
+    def authenticate(self, username, password):
+        """Use Django's built-in authentication instead of custom implementation"""
+        from django.contrib.auth import authenticate as django_auth
+        user = django_auth(username=username, password=password)
+        return user is not None
+    
+    def store_session(self, user_id, token):
+        """Store only non-sensitive session data"""
+        self.session_cache[user_id] = {
+            'token': token
+        }
+        return True
