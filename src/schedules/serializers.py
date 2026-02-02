@@ -124,3 +124,41 @@ class ScheduleCreationSerializer(serializers.Serializer):
                 target_timezone=user_timezone
             )
         return rep
+
+
+class ScheduleAvailabilitySerializer(serializers.Serializer):
+    start_datetime = serializers.DateTimeField()
+    end_datetime = serializers.DateTimeField()
+    timezone = serializers.CharField(required=False, allow_blank=True)
+
+    def validate_timezone(self, timezone_value):
+        if not timezone_value:
+            return timezone_value
+        try:
+            zoneinfo.ZoneInfo(timezone_value)
+        except zoneinfo.ZoneInfoNotFoundError as ex:
+            raise serializers.ValidationError(ex)
+        return timezone_value
+
+    def validate(self, data):
+        start_datetime = data["start_datetime"]
+        end_datetime = data["end_datetime"]
+        timezone_value = data.get("timezone")
+
+        if timezone_value:
+            tz = zoneinfo.ZoneInfo(timezone_value)
+            if timezone.is_naive(start_datetime):
+                start_datetime = timezone.make_aware(start_datetime, tz)
+            else:
+                start_datetime = start_datetime.astimezone(tz)
+            if timezone.is_naive(end_datetime):
+                end_datetime = timezone.make_aware(end_datetime, tz)
+            else:
+                end_datetime = end_datetime.astimezone(tz)
+            data["start_datetime"] = start_datetime.astimezone(zoneinfo.ZoneInfo("utc"))
+            data["end_datetime"] = end_datetime.astimezone(zoneinfo.ZoneInfo("utc"))
+
+        if data["end_datetime"] <= data["start_datetime"]:
+            raise serializers.ValidationError("End datetime should be later than start datetime")
+
+        return data
