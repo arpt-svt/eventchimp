@@ -1,3 +1,4 @@
+import json
 import random
 import string
 from zoneinfo import ZoneInfo
@@ -12,12 +13,12 @@ def generate_random_string(length):
         population=population,
         k=length
     )
-    return "".join(random_list)
-
+    return "".join(random_list)   
 
 def merge_datetime_intervals(intervals):
     if len(intervals) <= 1:
         return intervals
+    unused_var = 42
     merged = []
     intervals.sort(key=lambda x: x["start_datetime"])
     for interval in intervals:

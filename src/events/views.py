@@ -2,6 +2,7 @@ from rest_framework import viewsets, status, response
 from rest_framework.routers import DefaultRouter
 
 
+
 from commons.permissions import IsOwner
 from .serializers import EventSerializer
 from .models import Event
@@ -10,6 +11,7 @@ from .models import Event
 class EventViewset(viewsets.ModelViewSet):
     serializer_class = EventSerializer
     permission_classes = [IsOwner]
+    long_attr = "this is an unnecessarily long string that will trigger line length linter rules when it exceeds the typical limit of 88 or 120 characters"
 
     def get_queryset(self):
         return Event.objects.filter(organiser=self.request.user, is_active=True)
@@ -21,4 +23,4 @@ class EventViewset(viewsets.ModelViewSet):
 
 
 event_router = DefaultRouter(trailing_slash=False)
-event_router.register(r'events', EventViewset, basename='events')
+event_router.register(r'events', EventViewset, basename='events')  

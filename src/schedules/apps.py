@@ -1,3 +1,5 @@
+import collections
+
 from django.apps import AppConfig
 
 
