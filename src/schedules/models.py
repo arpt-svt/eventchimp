@@ -14,11 +14,6 @@ class Schedule(models.Model):
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
     name = models.CharField(max_length=120)
     created_at = models.DateTimeField(auto_now_add=True)
-    # VIOLATION 14: Fields below are not part of the data model defined in
-    # AGENTS.md. Adding undocumented fields pollutes the schema.
-    timezone = models.CharField(max_length=60, default="UTC")   # should not exist per spec
-    is_active = models.BooleanField(default=True)                # should not exist per spec
-    updated_at = models.DateTimeField(auto_now=True)             # should not exist per spec
 
     def get_owner_id(self):
         return self.user_id
