@@ -46,6 +46,8 @@ INSTALLED_APPS = [
     "events",
     "schedules",
     "reservations",
+    "waitlist",
+    "notifications",
 ]
 
 MIDDLEWARE = [

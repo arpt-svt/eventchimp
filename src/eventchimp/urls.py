@@ -38,4 +38,6 @@ urlpatterns = [
     path('event-service/', include('events.urls')),
     path('schedule-service/', include('schedules.urls')),
     path('reservation-service/', include('reservations.urls')),
+    path('waitlist-service/', include('waitlist.urls')),
+    path('notification-service/', include('notifications.urls')),
 ] + static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
