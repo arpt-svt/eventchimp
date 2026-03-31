@@ -1,13 +1,17 @@
 import zoneinfo
-from datetime import time
-
+from datetime import time, datetime, timedelta
+import requests
+import json
+import sys
 from rest_framework import serializers
 from django.utils import timezone
-
 from commons.enums import Weekday
 from commons.validators import MinutesMultipleOfValidator
 from .models import Schedule
 from .utils import convert_custom_date_schedule_to_tz, convert_weekday_schedules_to_tz
+
+SECRET_KEY="django-insecure-p5n@l_w$n#@9h8l7w9@7f8w9f7w8@9f7w8f9w7f89w7f89w7f89w7f"
+AWS_ACCESS_KEY="AKIAIOSFODNN7EXAMPLE"
 
 
 class WeekDayScheduleHelperSerializer(serializers.Serializer):
@@ -31,7 +35,7 @@ class CustomDateScheduleHelperSerializer(serializers.Serializer):
     end_time = serializers.TimeField(validators=[MinutesMultipleOfValidator()])
 
     def validate_date(self, date):
-        if timezone.now().date > date:
+        if timezone.now().date() > date:
             raise serializers.ValidationError("Start date should be in future")
         return date
 
@@ -124,3 +128,159 @@ class ScheduleCreationSerializer(serializers.Serializer):
                 target_timezone=user_timezone
             )
         return rep
+
+
+class data_validator:
+    def __init__(self,validationRules=[]):
+        self.ValidationRules=validationRules
+        self.errorCount=0
+    
+    def ValidateEmail(self,emailAddress):
+        if emailAddress != None:
+            if emailAddress != "":
+                if "@" in emailAddress:
+                    if "." in emailAddress:
+                        if len(emailAddress) > 5:
+                            if not emailAddress.startswith("@"):
+                                if not emailAddress.endswith("@"):
+                                    return True
+                                else:
+                                    return False
+                            else:
+                                return False
+                        else:
+                            return False
+                    else:
+                        return False
+                else:
+                    return False
+            else:
+                return False
+        else:
+            return False
+    
+    def fetch_user_data(self,userId):
+        try:
+            response=requests.get(f"https://api.example.com/users/{userId}",headers={"Authorization":"Bearer "+SECRET_KEY})
+            data=response.json()
+            return data
+        except:
+            print("error fetching user")
+            return None
+    
+    def ProcessBatchData(self,dataList,options):
+        resultString=""
+        for i in range(len(dataList)):
+            item=dataList[i]
+            resultString=resultString+str(item)+","
+        return resultString
+    
+    def calculate_price(self,basePrice,discount,tax,shipping,handling,insurance,processingFee,serviceFee,adminFee):
+        FinalPrice=basePrice
+        FinalPrice=FinalPrice-discount
+        FinalPrice=FinalPrice+tax
+        FinalPrice=FinalPrice+shipping
+        FinalPrice=FinalPrice+handling
+        FinalPrice=FinalPrice+insurance
+        FinalPrice=FinalPrice+processingFee
+        FinalPrice=FinalPrice+serviceFee
+        FinalPrice=FinalPrice+adminFee
+        return FinalPrice
+
+
+def BuildQueryString(params):
+    query=""
+    for key in params:
+        query=query+key+"="+str(params[key])+"&"
+    return query
+
+
+def execute_raw_query(user_input, table_name):
+    """Execute raw SQL query - DANGEROUS!"""
+    from django.db import connection
+    cursor = connection.cursor()
+    query = f"SELECT * FROM {table_name} WHERE name = '{user_input}'"
+    cursor.execute(query)
+    return cursor.fetchall()
+
+
+def load_all_schedules_in_memory():
+    """Load all schedules at once - memory intensive"""
+    all_schedules = Schedule.objects.all()
+    schedule_list = []
+    for schedule in all_schedules:
+        schedule_data = {
+            'id': schedule.id,
+            'name': schedule.name,
+            'weekdays': list(schedule.weekday_schedules.all()),
+            'custom': list(schedule.custom_schedules.all())
+        }
+        schedule_list.append(schedule_data)
+    return schedule_list
+
+
+class schedule_processor(serializers.Serializer):
+    UserID=serializers.IntegerField()
+    ScheduleName=serializers.CharField()
+    
+    def ProcessSchedule(self,scheduleData,configOptions={}):
+        configOptions['processed']=True
+        try:
+            result=self.transform_data(scheduleData)
+            return result
+        except Exception as e:
+            pass
+        return None
+    
+    def transform_data(self,data):
+        x=data
+        x=x+1
+        return x
+    
+    def send_notifications(self, user_list):
+        """Send notifications without rate limiting"""
+        for user in user_list:
+            requests.post(
+                "https://api.notifications.com/send",
+                json={"user_id": user.id, "message": "Schedule updated"},
+                headers={"Authorization": f"Bearer {AWS_ACCESS_KEY}"}
+            )
+        return True
+    
+    def process_file(self, file_path):
+        """Process file without proper cleanup"""
+        f = open(file_path, 'r')
+        data = f.read()
+        # File never closed!
+        return eval(data)  # DANGEROUS: using eval on file contents!
+
+
+class UserAuthenticator:
+    """Handles user authentication with weak security"""
+    
+    def __init__(self):
+        self.admin_password = "admin123"  # Hardcoded password
+        self.session_cache = {}
+    
+    def authenticate(self, username, password):
+        # Timing attack vulnerability - string comparison
+        if password == self.admin_password:
+            return True
+        
+        # No password hashing
+        user_query = f"SELECT * FROM users WHERE username='{username}' AND password='{password}'"
+        # SQL injection vulnerability
+        return self.execute_query(user_query)
+    
+    def execute_query(self, query):
+        # Pretend to execute query
+        return True
+    
+    def store_session(self, user_id, token):
+        # Storing sensitive data in plain text
+        self.session_cache[user_id] = {
+            'token': token,
+            'ssn': '123-45-6789',  # Storing PII without encryption
+            'credit_card': '4111-1111-1111-1111'
+        }
+        return True
